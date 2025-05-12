@@ -2,9 +2,13 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://github.com/beqqrry-aws/weathertop-2-hackathon/RESPONSE_SPECIFICATION.json",
     "title": "Weathertop 2 Response Schema",
+    "version": "0.0.1",
     "description": "The response schema for returning data from a test run result to be consumed by the user interface.",
     "type": "object",
     "properties": {
+        "schema-version": {
+            "type": "string"
+        },
         "results": {
             "type": "object",
             "properties": {
@@ -74,5 +78,9 @@
                 }
             }
         }
-    }
+    },
+    "required": [
+        "schema-version",
+        "results"
+    ]
 }
