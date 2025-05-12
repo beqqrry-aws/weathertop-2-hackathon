@@ -1,0 +1,21 @@
+{
+    "results": {
+        "tool": "test tool",
+        "summary": {
+            "tests": 10,
+            "passed": 8,
+            "failed": 2,
+            "start_time": 0,
+            "stop_time": 100
+        },
+        "tests": [
+            {
+                "name": "test 1",
+                "status": "passed",
+                "duration": 1,
+                "message": "passed",
+                "log": "none"
+            }
+        ]
+    }
+}
