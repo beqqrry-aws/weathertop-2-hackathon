@@ -1,0 +1,78 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/beqqrry-aws/weathertop-2-hackathon/RESPONSE_SPECIFICATION.json",
+    "title": "Weathertop 2 Response Schema",
+    "description": "The response schema for returning data from a test run result to be consumed by the user interface.",
+    "type": "object",
+    "properties": {
+        "results": {
+            "type": "object",
+            "properties": {
+                "tool": {
+                    "type": "string",
+                    "description": "Name of the end testing tool which is the basis for the output, e.g. JUnit, Pytest, etc."
+                },
+                "summary": {
+                    "type": "object",
+                    "properties": {
+                        "tests": {
+                            "type": "integer"
+                        },
+                        "passed": {
+                            "type": "integer"
+                        },
+                        "failed": {
+                            "type": "integer"
+                        },
+                        "skipped": {
+                            "type": "integer"
+                        },
+                        "other": {
+                            "type": "integer"
+                        },
+                        "start_time": {
+                            "type": "integer"
+                        },
+                        "stop_time": {
+                            "type": "integer"
+                        }
+                    },
+                    "required": [
+                        "tests",
+                        "passed"
+                    ]
+                },
+                "tests": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "enum": [
+                                    "passed",
+                                    "failed",
+                                    "skipped",
+                                    "other"
+                                ]
+                            },
+                            "duration": {
+                                "type": "integer"
+                            },
+                            "message": {
+                                "type": "string",
+                                "description": "A short message with any useful information such as error code, id numbers, etc."
+                            },
+                            "log": {
+                                "type": "string",
+                                "description": "A dumping ground for any and all logs relevant to the operation."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
