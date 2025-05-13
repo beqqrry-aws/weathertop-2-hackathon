@@ -134,55 +134,81 @@ export default function App() {
   const [allBreakdowns, setAllBreakdowns] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchSummary = async (lang) => {
-    setLoading(true);
-    setSummaryData({});
-    setAllBreakdowns([]);
+const fetchSummary = async (lang) => {
+  setLoading(true);
+  setSummaryData({});
+  setAllBreakdowns([]);
 
-    try {
-      const url = `https://4mjmf7v6c2.execute-api.us-east-1.amazonaws.com/Weathertopstage/mydata?lang=${lang}`;
-      const res = await fetch(url);
+  try {
+    let url = '';
+    let filename='';
+    if (lang === 'Java') {
+      filename = 'java-2025-05-13T12-15.json';
+      url = `/test-runs/${filename}`;
+    } 
 
-      if (!res.ok) {
-        throw new Error('API request failed');
-      }
+    if (lang === 'Kotlin') {
+      filename = 'kotlin-2025-05-12T12-15.json';
+      url = `/test-runs/${filename}`;
+    } 
 
-      const outerJson = await res.json(); // First parse
-      console.log('🌐 Outer JSON:', outerJson);
+    if (lang === 'DotNetv4') {
+      filename = 'dotnetv4-2025-05-13T12-15.json';
+      url = `/test-runs/${filename}`;
+    } 
 
-      const innerJson = JSON.parse(outerJson.body); // Second parse
-      console.log('✅ Parsed Summary Data:', innerJson);
-
-      const runId = innerJson?.RunId || '—';
-      const passed = Number(innerJson?.TotalPassed ?? 0);
-      const failed = Number(innerJson?.TotalFailed ?? 0);
-      const total = passed + failed;
-      const duration = innerJson?.TotalTime || '—';
-      const servicesTested = innerJson?.ServicesTested || '—';
-
-      const calculatedPassRate = total > 0 ? ((passed / total) * 100).toFixed(2) : '0.00';
-
-      setSummaryData({
-        runId,
-        total,
-        passed,
-        failed,
-        duration,
-        servicesTested,
-        passRate: `${calculatedPassRate}%`,
-      });
-
-      setAllBreakdowns([{
-        name: lang,
-        total,
-        passRate: `${calculatedPassRate}%`,
-      }]);
-    } catch (err) {
-      console.error('❌ Error parsing summary data:', err);
-    } finally {
-      setLoading(false);
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Failed to load local JSON file: ${url}`);
     }
-  };
+
+    const jsonData = await res.json();
+    const summary = jsonData?.results?.summary;
+    if (!summary) {
+      throw new Error('Summary data not found in JSON');
+    }
+
+    const tests = Number(summary.tests ?? 0);
+    const passed = Number(summary.passed ?? 0);
+    const failed = Number(summary.failed ?? 0);
+    const total = tests + failed;
+    const passRate = total > 0 ? ((passed / total) * 100).toFixed(2) : '0.00';
+
+    const summary2 = jsonData?.results?.summary;
+    const startTime = summary2?.start_time ?? 0;
+    const stopTime = summary2?.stop_time ?? 0;
+    
+    // Calculate duration if start_time and stop_time are valid
+    let duration = '—';
+    const durationMs = stopTime - startTime;
+    const hours = Math.floor(durationMs / (1000 * 60 * 60)); // Calculate hours
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60)); // Calculate remaining minutes
+    duration = `${hours} hours ${minutes} minutes`;
+
+    const runId = filename.replace(/\.json$/, ''); 
+    // Update the summary data with calculated duration
+    setSummaryData({
+      runId,
+      total,
+      passed,
+      failed,
+      duration, // Update with calculated duration
+      servicesTested: jsonData?.ServicesTested || '—',
+      passRate: `${passRate}%`,
+    });
+
+    setAllBreakdowns([{
+      name: lang,
+      total,
+      passRate: `${passRate}%`,
+    }]);
+
+  } catch (err) {
+    console.error('❌ Error loading summary data:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchSummary(selectedLang);
