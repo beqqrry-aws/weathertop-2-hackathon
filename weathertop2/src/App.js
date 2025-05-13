@@ -43,10 +43,6 @@ function App() {
 </h4>
       <div className="dashboard">
         <div className="column">
-          <TestConfig />
-          <ExecutionControl onRun={handleRun} onStop={handleStop} />
-        </div>
-        <div className="column">
           <TestDashboard status={status} logs={logs} />
         </div>
       </div>
