@@ -1,27 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import '../styles/LanguageBreakdown.css';
 
-function LanguageBreakdown() {
-  const [breakdowns, setBreakdowns] = useState([]);
+const getLanguagesFromFiles = (files) => {
+  const langs = new Set();
+  for (const file of files) {
+    const match = file.match(/^([^-]+)-/); // Extract "php" from "php-2025-05-12T12-15.json"
+    if (match) {
+      langs.add(match[1]);
+    }
+  }
+  return Array.from(langs);
+};
+
+const LanguageBreakdown = () => {
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchBreakdowns = async () => {
       try {
-        const response = await fetch('https://lbayjr5ma7.execute-api.us-east-1.amazonaws.com/prod/stats');
+        const res = await fetch('/test-runs/index.json');
+        const files = await res.json();
+        const languages = getLanguagesFromFiles(files);
 
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+        const latestFiles = {};
+        for (const lang of languages) {
+          const langFiles = files.filter((file) => file.startsWith(`${lang}-`));
+          if (!langFiles.length) continue;
+          langFiles.sort((a, b) => b.localeCompare(a)); // Descending
+          latestFiles[lang] = langFiles[0];
         }
 
-        const outerJson = await response.json(); // First parse
-        console.log('🌐 Outer JSON:', outerJson);
+        const breakdowns = [];
+        for (const lang of Object.keys(latestFiles)) {
+          const file = latestFiles[lang];
+          const response = await fetch(`/test-runs/${file}`);
+          const json = await response.json();
+          const summary = json?.results?.summary;
 
-        const innerJson = JSON.parse(outerJson.body); // Second parse
-        console.log('✅ Parsed Breakdown Data:', innerJson);
+          const tests = Number(summary?.tests ?? 0);
+          const passed = Number(summary?.passed ?? 0);
+          const passRate = tests > 0 ? ((passed / tests) * 100).toFixed(2) : '0.00';
 
-        setBreakdowns(innerJson);
-      } catch (error) {
-        console.error('Error fetching language breakdown:', error);
+          breakdowns.push({
+            name: lang,
+            total: tests,
+            passRate: `${passRate}%`,
+          });
+        }
+
+        setData(breakdowns);
+      } catch (err) {
+        console.error('❌ Error loading breakdowns:', err);
       } finally {
         setLoading(false);
       }
@@ -30,38 +60,32 @@ function LanguageBreakdown() {
     fetchBreakdowns();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 flex items-center">
-          🧪 Test Breakdown by Language
-        </h2>
-        <p className="text-gray-500 italic">Loading...</p>
-      </div>
-    );
-  }
+  if (loading) return <p>Loading breakdowns...</p>;
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-      <h2 className="text-2xl font-semibold mb-4 text-gray-800 flex items-center">
-        🧪 Test Breakdown by Language
-      </h2>
-      {breakdowns.length > 0 ? (
-        <ul className="space-y-3 text-lg text-gray-700">
-          {breakdowns.map((lang, idx) => (
-            <li key={idx} className="flex justify-between border-b pb-1">
-              <span>{lang.Language} </span>
-              <span>
-                {lang.TotalTests} tests – {lang.PassRate}% pass
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500 italic">No language data available.</p>
-      )}
+    <div className="breakdown-wrapper">
+      <h2 className="section-title">🧪 Test Coverage by Language</h2>
+      <div className="breakdown-container">
+        {data.map((item) => (
+          <div className="card" key={item.name}>
+            <h3>{item.name}</h3>
+            <p>{item.total} tests</p>
+            <p className="label">Pass Rate</p>
+            <p className="rate">{item.passRate}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
-}
+};
 
 export default LanguageBreakdown;
+
+
+
+
+
+
+
+
+

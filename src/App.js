@@ -31,12 +31,6 @@ function App() {
 
   return (
     <div className={`app-container ${theme}`}>
-      <div className="theme-toggle-container">
-        <label className="theme-switch">
-          <input type="checkbox" onChange={toggleTheme} checked={theme === 'dark'} />
-          <span className="slider round"></span>
-        </label>
-      </div>
       <h1 className="app-title">Weathertop</h1>
       <h4>
   Weathertop is an integration test platform designed to test AWS Code examples. It ensures that the examples work as intended, helping to raise the quality and reliability of the code examples.

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import LanguageBreakdown from './LanguageBreakdown';
+import '../styles/styles.css';
 
-// Set the app element for accessibility
 Modal.setAppElement('#root');
 
 function TestResultsDashboard({ summary, allBreakdowns, loading }) {
@@ -18,40 +18,60 @@ function TestResultsDashboard({ summary, allBreakdowns, loading }) {
   const passRate = total > 0 ? ((passed / total) * 100).toFixed(2) : '0.00';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [failInfo, setFailInfo] = useState([]); // Stores the fail information from API
+  const [failInfo, setFailInfo] = useState([]);
   const [failLoading, setFailLoading] = useState(false);
 
   const handleModalToggle = async () => {
-    const url = `https://dtpuya01xb.execute-api.us-east-1.amazonaws.com/prod/myresource?runId=${runId}`;
-    const res = await fetch(url);
+    try {
+      if (!runId) throw new Error('runId is not set.');
 
-    if (!res.ok) {
-      throw new Error('Failed to fetch fail information');
+      const response = await fetch(`/test-runs/${runId}.json`);
+      if (!response.ok) throw new Error(`Failed to fetch file: ${response.statusText}`);
+
+      setFailLoading(true);
+      const data = await response.json();
+      const tests = data?.results?.tests ?? [];
+      const failedTests = tests.filter((t) => t.status === 'failed');
+
+      setFailInfo(
+        failedTests.map((test) => ({
+          name: test.name,
+          message: test.message,
+          log: test.log,
+        }))
+      );
+
+      setFailLoading(false);
+      setIsModalOpen(true);
+    } catch (err) {
+      console.error('Error loading test data:', err);
+      setFailInfo([]);
+      setFailLoading(false);
+      setIsModalOpen(true);
     }
-
-    const outerJson = await res.json();
-    console.log('outerJson:', outerJson); // Log the JSON response to inspect its structure
-
-    // Set the fail information in state
-    setFailInfo(outerJson); // Store the JSON data returned from the API in the failInfo state
-
-    setIsModalOpen(!isModalOpen); // Toggle the modal open/close state
   };
+
+  const handleModalClose = () => setIsModalOpen(false);
+
+  useEffect(() => {
+    if (failInfo.length === 0 && failLoading) {
+      setIsModalOpen(false);
+    }
+  }, [failInfo, failLoading]);
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="w-12 h-12 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-blue-500 border-dashed rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-      {/* Test Summary */}
       <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
         <h2 className="text-2xl font-semibold mb-4 text-gray-800 flex items-center">
-          📊 Test Summary
+          📊 Test Summary Per Selected SDK
         </h2>
         <div className="grid gap-4 text-gray-700 text-lg">
           <div className="flex justify-between">
@@ -87,39 +107,41 @@ function TestResultsDashboard({ summary, allBreakdowns, loading }) {
         </div>
       </div>
 
-      {/* Language Breakdown */}
       <LanguageBreakdown allBreakdowns={allBreakdowns} />
 
-      {/* Modal */}
       <Modal
         isOpen={isModalOpen}
-        onRequestClose={handleModalToggle}
+        onRequestClose={handleModalClose}
         contentLabel="Fail Information"
-        className="fixed top-1/4 left-1/2 transform -translate-x-1/2 bg-white rounded-xl p-6 w-11/12 max-w-2xl shadow-lg outline-none"
-        overlayClassName="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+        shouldCloseOnOverlayClick={false}
+        shouldCloseOnEsc={false}
+        className="custom-modal"
+        overlayClassName="custom-overlay"
       >
-        <div>
-          <h3 className="text-xl font-semibold mb-4 text-gray-800">Fail Information</h3>
+        <div className="modal-body">
+          <h3 className="modal-title">Fail Information</h3>
 
           {failLoading ? (
-            <div className="text-center text-gray-600">Loading fail data...</div>
+            <div className="modal-message">Loading fail data...</div>
           ) : failInfo.length === 0 ? (
-            <div className="text-gray-600">No fail information available.</div>
+            <div className="modal-message">No fail information available.</div>
           ) : (
-            <div className="space-y-4">
+            <div className="fail-info-list">
               {failInfo.map((item, index) => (
-                <div key={index} className="border p-4 rounded-lg bg-gray-50">
-                  <h4 className="font-semibold text-lg text-gray-800">{item.serviceName}</h4>
-                  <p className="text-sm text-red-600">{item.errorSummary}</p>
+                <div key={index} className="fail-info-row">
+                  <h4 className="fail-info-title">🔧 {item.name}</h4>
+                  <p className="fail-info-message">
+                    <strong>AWS Service:</strong> {item.message}
+                  </p>
+                  {item.log && (
+                    <pre className="fail-info-log">{item.log}</pre>
+                  )}
                 </div>
               ))}
             </div>
           )}
 
-          <button
-            onClick={handleModalToggle}
-            className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg"
-          >
+          <button onClick={handleModalClose} className="modal-close-button">
             Close
           </button>
         </div>
@@ -134,81 +156,78 @@ export default function App() {
   const [allBreakdowns, setAllBreakdowns] = useState([]);
   const [loading, setLoading] = useState(false);
 
-const fetchSummary = async (lang) => {
-  setLoading(true);
-  setSummaryData({});
-  setAllBreakdowns([]);
+  const fetchSummary = async (lang) => {
+    setLoading(true);
+    setSummaryData({});
+    setAllBreakdowns([]);
 
-  try {
-    let url = '';
-    let filename='';
-    if (lang === 'Java') {
-      filename = 'java-2025-05-13T12-15.json';
-      url = `/test-runs/${filename}`;
-    } 
+    try {
+      const prefixMap = {
+        Java: 'java-',
+        Kotlin: 'kotlin-',
+        DotNetv4: 'dotnetv4-',
+        PHP: 'php-',
+      };
 
-    if (lang === 'Kotlin') {
-      filename = 'kotlin-2025-05-12T12-15.json';
-      url = `/test-runs/${filename}`;
-    } 
+      const prefix = prefixMap[lang];
+      if (!prefix) throw new Error(`Unknown language: ${lang}`);
 
-    if (lang === 'DotNetv4') {
-      filename = 'dotnetv4-2025-05-13T12-15.json';
-      url = `/test-runs/${filename}`;
-    } 
+      const indexRes = await fetch('/test-runs/index.json');
+      if (!indexRes.ok) throw new Error('Failed to load index.json');
 
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`Failed to load local JSON file: ${url}`);
+      const files = await indexRes.json();
+      if (!Array.isArray(files)) throw new Error('Invalid format in index.json — expected an array');
+
+      const langFiles = files
+        .filter((file) => file.startsWith(prefix) && file.endsWith('.json'))
+        .sort()
+        .reverse();
+
+      if (langFiles.length === 0) throw new Error(`No matching files found for language: ${lang}`);
+
+      const latestFile = langFiles[0];
+      const res = await fetch(`/test-runs/${latestFile}`);
+      if (!res.ok) throw new Error(`Failed to load summary file: ${latestFile}`);
+
+      const jsonData = await res.json();
+      const summary = jsonData?.results?.summary;
+      if (!summary) throw new Error('Summary data not found in JSON');
+
+      const tests = Number(summary.tests ?? 0);
+      const passed = Number(summary.passed ?? 0);
+      const failed = Number(summary.failed ?? 0);
+
+      if (tests !== passed + failed) {
+        console.warn(`⚠️ Sanity check: tests (${tests}) ≠ passed (${passed}) + failed (${failed})`);
+      }
+
+      const total = tests;
+      const passRate = total > 0 ? ((passed / total) * 100).toFixed(2) : '0.00';
+      const startTime = summary.start_time ?? 0;
+      const stopTime = summary.stop_time ?? 0;
+      const durationMs = stopTime - startTime;
+      const hours = Math.floor(durationMs / (1000 * 60 * 60));
+      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+      const duration = `${hours} hours ${minutes} minutes`;
+      const runId = latestFile.replace(/\.json$/, '');
+
+      setSummaryData({
+        runId,
+        total,
+        passed,
+        failed,
+        duration,
+        servicesTested: jsonData?.ServicesTested || '—',
+        passRate: `${passRate}%`,
+      });
+
+      setAllBreakdowns([{ name: lang, total, passRate: `${passRate}%` }]);
+    } catch (err) {
+      console.error('❌ Error loading summary data:', err);
+    } finally {
+      setLoading(false);
     }
-
-    const jsonData = await res.json();
-    const summary = jsonData?.results?.summary;
-    if (!summary) {
-      throw new Error('Summary data not found in JSON');
-    }
-
-    const tests = Number(summary.tests ?? 0);
-    const passed = Number(summary.passed ?? 0);
-    const failed = Number(summary.failed ?? 0);
-    const total = tests + failed;
-    const passRate = total > 0 ? ((passed / total) * 100).toFixed(2) : '0.00';
-
-    const summary2 = jsonData?.results?.summary;
-    const startTime = summary2?.start_time ?? 0;
-    const stopTime = summary2?.stop_time ?? 0;
-    
-    // Calculate duration if start_time and stop_time are valid
-    let duration = '—';
-    const durationMs = stopTime - startTime;
-    const hours = Math.floor(durationMs / (1000 * 60 * 60)); // Calculate hours
-    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60)); // Calculate remaining minutes
-    duration = `${hours} hours ${minutes} minutes`;
-
-    const runId = filename.replace(/\.json$/, ''); 
-    // Update the summary data with calculated duration
-    setSummaryData({
-      runId,
-      total,
-      passed,
-      failed,
-      duration, // Update with calculated duration
-      servicesTested: jsonData?.ServicesTested || '—',
-      passRate: `${passRate}%`,
-    });
-
-    setAllBreakdowns([{
-      name: lang,
-      total,
-      passRate: `${passRate}%`,
-    }]);
-
-  } catch (err) {
-    console.error('❌ Error loading summary data:', err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     fetchSummary(selectedLang);
@@ -233,6 +252,7 @@ const fetchSummary = async (lang) => {
           <option value="Java">Java</option>
           <option value="Kotlin">Kotlin</option>
           <option value="DotNetv4">DotNetv4</option>
+          <option value="PHP">PHP</option>
         </select>
       </div>
 
