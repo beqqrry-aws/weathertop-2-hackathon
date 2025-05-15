@@ -4,8 +4,8 @@
     "tool": "JUnit",
     "summary": {
       "tests": 429,
-      "passed": 412,
-      "failed": 17,
+      "passed": 422,
+      "failed": 7,
       "start_time": 0,
       "stop_time": 18000000
     },
