@@ -1,0 +1,1 @@
+{"schema-version":"0.0.1","results":{"tool":"PHP 8.3.6","summary":{"tests":2,"passed":2,"failed":0,"start_time":0,"stop_time":1},"tests":[{"name":"test1","status":"passed","duration":1,"message":"passed","log":"none"}]}}
