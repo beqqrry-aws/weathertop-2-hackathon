@@ -68,43 +68,54 @@ function TestResultsDashboard({ summary, allBreakdowns, loading }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 flex items-center">
-          📊 Test Summary Per Selected SDK
-        </h2>
-        <div className="grid gap-4 text-gray-700 text-lg">
-          <div className="flex justify-between">
-            <span>🆔 <strong>Run Id: </strong></span>
-            <span>{runId}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>🔧 <strong>Total Tests: </strong></span>
-            <span>{total}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>🟢 <strong>Passed: </strong></span>
-            <span>{passed}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>🔴 <strong>Failed: </strong></span>
-            <span>{failed}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>📈 <strong>Pass Rate: </strong></span>
-            <span>{passRate}%</span>
-          </div>
-          <div className="flex justify-between">
-            <span>⏱️ <strong>Execution Time: </strong></span>
-            <span>{duration}</span>
-          </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+    <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+      <h2 className="text-2xl font-semibold mb-4 text-gray-800 flex items-center">
+        📊 Test Summary Per Selected SDK
+      </h2>
+      <div className="grid gap-4 text-gray-700 text-lg">
+        <div className="flex justify-between">
+          <span>🆔 <strong>Run Id: </strong></span>
+          <span>{runId}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>🔧 <strong>Total Tests: </strong></span>
+          <span>{total}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>🟢 <strong>Passed: </strong></span>
+          <span>{passed}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>🔴 <strong>Failed: </strong></span>
+          <span>{failed}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>📈 <strong>Pass Rate: </strong></span>
+          <span>{passRate}%</span>
+        </div>
+        <div className="flex justify-between">
+          <span>⏱️ <strong>Execution Time: </strong></span>
+          <span>{duration}</span>
+        </div>
+
+        {/* Buttons on the same line */}
+        <div className="flex space-x-4 mt-4">
           <button
             onClick={handleModalToggle}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg"
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
           >
             View Fail Information
           </button>
+
+          <button
+            onClick={() => alert("Echo Tests")}
+            className="px-4 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:from-green-500 hover:to-blue-600 transition"
+          >
+            🚀 Execute Tests
+          </button>
         </div>
+      </div>
       </div>
 
       <LanguageBreakdown allBreakdowns={allBreakdowns} />
